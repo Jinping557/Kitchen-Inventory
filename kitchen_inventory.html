@@ -516,6 +516,55 @@
   .step-add-btn{margin-top:8px;}
   .step-row.dragging{opacity:.5;}
 
+  /* ===== AI Recipe parser ===== */
+  .ai-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .ai-btn{display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,#9333ea,#6366f1);
+    color:#fff;border:none;border-radius:var(--r-full);
+    padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;
+    box-shadow:0 3px 10px rgba(147,51,234,.22);transition:all var(--t-fast);}
+  .ai-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(99,102,241,.3);}
+  .ai-btn:active{transform:translateY(0);}
+  .ai-btn .spark{font-size:13px;}
+  .ai-mask{position:fixed;inset:0;background:rgba(20,18,12,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    z-index:150;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease;}
+  .ai-mask[hidden]{display:none;}
+  .ai-box{background:var(--cream);border-radius:var(--r-xl);max-width:560px;width:100%;max-height:88vh;overflow-y:auto;
+    box-shadow:var(--shadow-lg);animation:popIn var(--t-med) var(--ease-spring);}
+  .ai-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;background:linear-gradient(135deg,#9333ea,#6366f1);color:#fff;border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);z-index:1;}
+  .ai-head .t{font-weight:800;font-size:16px;letter-spacing:-.2px;display:flex;align-items:center;gap:8px;}
+  .ai-close{width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.3);
+    background:rgba(255,255,255,.15);color:#fff;font-size:18px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;transition:all var(--t-fast);}
+  .ai-close:hover{background:rgba(255,255,255,.3);}
+  .ai-body{padding:16px 18px 18px;}
+  .ai-hint{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6;}
+  .ai-hint b{color:var(--berry);}
+  .ai-paste{width:100%;min-height:160px;resize:vertical;}
+  .ai-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .ai-actions .btn{flex:1;min-width:120px;}
+  .ai-preview{margin-top:14px;border:1.5px dashed var(--berry-l);border-radius:var(--r-md);
+    background:var(--berry-xl);padding:12px 14px;}
+  .ai-preview h4{margin:0 0 8px;font-size:13px;font-weight:800;color:var(--berry);letter-spacing:-.2px;}
+  .ai-preview .pv-title{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--ink);}
+  .ai-preview .pv-group{margin-bottom:8px;}
+  .ai-preview .pv-group:last-child{margin-bottom:0;}
+  .ai-preview .pv-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .ai-preview .pv-ings{display:flex;flex-wrap:wrap;gap:5px;}
+  .ai-preview .pv-ing{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);
+    background:var(--herb-xl);color:var(--herb-d);border:1px solid var(--herb-l);}
+  .ai-preview .pv-steps{list-style:none;counter-reset:pvstep;padding:0;margin:0;}
+  .ai-preview .pv-steps li{counter-increment:pvstep;padding:6px 0 6px 26px;position:relative;font-size:13px;line-height:1.5;border-bottom:1px dashed var(--line-2);}
+  .ai-preview .pv-steps li:last-child{border-bottom:none;}
+  .ai-preview .pv-steps li::before{content:counter(pvstep);position:absolute;left:0;top:7px;width:18px;height:18px;
+    border-radius:50%;background:var(--berry);color:#fff;font-size:10px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;}
+  .ai-loader{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--berry);}
+  .ai-loader .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--berry-l);
+    border-top-color:var(--berry);animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
   /* ===== Dashboard drag handle ===== */
   .dash-drag-handle{display:inline-flex;align-items:center;cursor:grab;
     color:var(--muted);margin-right:4px;padding:2px;font-size:16px;line-height:1;
@@ -3311,6 +3360,30 @@
   </div>
 </div>
 
+<!-- AI 智能解析弹窗 -->
+<div class="ai-mask" id="aiParseMask" hidden="">
+  <div class="ai-box">
+    <div class="ai-head">
+      <div class="t"><span>✨</span>AI智能解析抖音菜谱</div>
+      <button class="ai-close" id="aiParseClose" type="button">×</button>
+    </div>
+    <div class="ai-body">
+      <p class="ai-hint">📋 <b>使用方法：</b>把抖音视频简介、评论区或博主分享的整段菜谱文案粘贴到下面，点击「开始智能解析」，AI会自动识别<b>菜名</b>、<b>食材</b>和<b>制作步骤</b>，并一键填入上方的食谱表单。</p>
+      <textarea id="aiPasteBox" class="ai-paste input" placeholder='举个栗子，粘贴：&#10;&#10;【番茄炒蛋超下饭版】&#10;&#10;食材：西红柿2个 鸡蛋3枚 葱花适量 盐 糖1勺 生抽少许&#10;&#10;做法：1.鸡蛋打散加少许盐，热油滑炒定型盛出。&#10;2.锅留底油，下西红柿块中小火炒出沙，加一勺糖和少许生抽调味。&#10;3.倒回鸡蛋翻匀，撒葱花出锅，配米饭绝了！'></textarea>
+      <div class="ai-actions">
+        <button type="button" class="btn ghost" id="aiClearBtn">清空</button>
+        <button type="button" class="btn" id="aiRunBtn">🧠 开始智能解析</button>
+      </div>
+      <div id="aiLoader" style="display:none;margin-top:14px;"><div class="ai-loader"><span class="spin"></span><span>AI 正在仔细阅读菜谱并梳理步骤…</span></div></div>
+      <div id="aiPreview" style="display:none;"></div>
+      <div id="aiFillActions" style="display:none;margin-top:14px;" class="ai-actions">
+        <button type="button" class="btn ghost" id="aiCancelFillBtn">再改改</button>
+        <button type="button" class="btn" id="aiConfirmFillBtn">✅ 确认并填入表单</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -3955,7 +4028,8 @@
       +'<div class="ing-suggest" id="ingSuggest" style="display:none;"><span class="ing-suggest-label">从库存中选择：</span></div>'
       +'</div></div>'
       +'<div class="field full"><label>标签（可选，逗号分隔）</label><input id="r-tags" type="text" placeholder="早餐, 快手" maxlength="80"></div>'
-      +'<div class="field full"><label>制作步骤（可选）</label>'
+      +'<div class="field full"><div class="ai-row"><label style="margin:0;">制作步骤（可选）</label>'
+      +'<button type="button" class="ai-btn" id="aiParseBtn"><span class="spark">✨</span>AI智能解析抖音菜谱</button></div>'
       +'<div class="steps-editor" id="formStepsEditor">'
       +'<p class="steps-hint">逐步记录做法，可拖动排序、删除。</p>'
       +'<div id="formStepList"></div>'
@@ -4003,6 +4077,7 @@
     });
     renderIngPool(); renderIngSuggest();
     bindFormStepEditor();
+    var aiBtn=$('aiParseBtn'); if(aiBtn){ aiBtn.addEventListener('click', openAiParse); }
   }
   function addFormStepRow(val){
     val=val||'';
@@ -4065,6 +4140,603 @@
     addFormStepRow('');
     $('recEditHint').style.display='none'; $('recSaveBtn').textContent='保存食谱';
   }
+
+  /* ---------- AI 智能解析抖音菜谱 ---------- */
+  var __aiParsed=null; // 缓存解析结果
+
+  // 常见食材词库（高频 + 与库存默认一致），用于增强食材识别
+  var COMMON_ING_HINTS=['番茄','西红柿','鸡蛋','土豆','青椒','洋葱','大蒜','葱','姜','蒜','辣椒','黄瓜','茄子','胡萝卜','白菜','菠菜','生菜','蘑菇','香菇','豆腐','豆皮','豆芽','韭菜','芹菜','玉米','豌豆','萝卜','南瓜','冬瓜','苦瓜','丝瓜','花菜','西兰花','豆角','四季豆','牛肉','猪肉','鸡肉','鸭肉','鱼肉','虾','虾仁','排骨','五花肉','里脊','火腿','培根','鸡翅','鸡腿','鸡蛋','鸭蛋','鹌鹑蛋','米饭','面条','挂面','年糕','饺子皮','面粉','淀粉','糯米','油','盐','糖','白糖','冰糖','生抽','老抽','酱油','蚝油','醋','米醋','陈醋','料酒','白酒','啤酒','香油','花椒','八角','桂皮','香叶','孜然','咖喱','胡椒粉','辣椒面','豆瓣酱','黄豆酱','甜面酱','番茄酱','沙拉酱','蜂蜜','牛奶','酸奶','芝士','黄油','奶油','椰浆','柠檬','橙子','苹果','香蕉','草莓','蓝莓','芝麻','花生','核桃','杏仁','枸杞','红枣','葡萄干','枸杞','香菜','小葱','大葱']
+
+  function openAiParse(){
+    __aiParsed=null;
+    var mask=$('aiParseMask'); if(!mask) return;
+    mask.hidden=false;
+    $('aiPasteBox').value='';
+    $('aiPreview').style.display='none'; $('aiPreview').innerHTML='';
+    $('aiFillActions').style.display='none';
+    $('aiLoader').style.display='none';
+    setTimeout(function(){ $('aiPasteBox').focus(); }, 50);
+  }
+  function closeAiParse(){
+    var mask=$('aiParseMask'); if(mask) mask.hidden=true;
+  }
+
+  // 核心：从一段抖音菜谱文案 → { title, ingredients, steps }
+  function aiParseText(raw){
+    raw=(raw||'').replace(/\r/g,'').trim();
+    var result={ title:'', ingredients:[], steps:[] };
+    if(!raw) return result;
+    // 全角空格/不间断空格 统一
+    raw=raw.replace(/[\u3000\u00a0]/g,' ').replace(/[ \t]+/g,' ').trim();
+
+    // 1. 拆成行（保留空行信息，用双换行当段落边界）
+    //    先在"emoji + 字"之间规范：
+    //    用"码点安全"的方式扫描：若发现行内出现 🍳/🥘/💡/🔥/👩‍🍳 这类符号（通过码点判断是否处于 Supplementary Plane 或符号区），
+    //    且下一个非空白字不是空，并且该行之前没换行，则在emoji前插入换行（若emoji前已有换行或行首则不插）
+    //    简化处理：我们不用 [emoji] 字符类（会切断 surrogate pair），改用"序列关键词"在预处理时不搞emoji插入换行，
+    //    而是通过"食材/做法/提示"关键词前强制换行 + block阶段 stripHeadMarks 来兼容。
+    // 在 "食材/准备/用料/主料/辅料/调料/配料/原料/做法/步骤/制作/烹饪/方法/流程/操作/教程/提示/Tips" 等关键词之前（非行首的情况下）强制加换行，帮助分块
+    var headerWords=[
+      // "必须带冒号或行尾" 的词（单独出现也OK，但句子中间误伤率太高，强制带冒号才切）
+      {w:'食材准备', needColon:false},
+      {w:'所需食材', needColon:false},
+      {w:'准备食材', needColon:false},
+      {w:'食材清单', needColon:false},
+      {w:'食材明细', needColon:false},
+      {w:'准备工作', needColon:false},
+      {w:'准备材料', needColon:false},
+      {w:'配料表', needColon:false},
+      {w:'配菜清单', needColon:false},
+      {w:'用料清单', needColon:false},
+      {w:'小提示', needColon:false},
+      {w:'小贴士', needColon:false},
+      {w:'温馨提示', needColon:false},
+      {w:'注意事项', needColon:false},
+      {w:'小技巧', needColon:false},
+      {w:'做法步骤', needColon:false},
+      {w:'制作步骤', needColon:false},
+      {w:'烹饪步骤', needColon:false},
+      {w:'详细步骤', needColon:false},
+      {w:'操作步骤', needColon:false},
+      {w:'操作流程', needColon:false},
+      {w:'制作流程', needColon:false},
+      {w:'烹饪教程', needColon:false},
+      {w:'做法教程', needColon:false},
+      {w:'制作方法', needColon:false},
+      {w:'烹饪方法', needColon:false},
+      {w:'家常做法', needColon:false},
+      {w:'做法大全', needColon:false},
+      {w:'详细做法', needColon:false},
+      {w:'烹饪小窍门', needColon:false},
+      {w:'烹调小窍门', needColon:false},
+      {w:'食用小贴士', needColon:false},
+      {w:'厨房小贴士', needColon:false},
+      {w:'家常小贴士', needColon:false},
+      {w:'烹调小提示', needColon:false},
+      {w:'新手小贴士', needColon:false},
+      // 高误伤词：必须带冒号/顿号/数字开头或行尾
+      {w:'食材', needColon:true},
+      {w:'用料', needColon:true},
+      {w:'材料', needColon:true},
+      {w:'原料', needColon:true},
+      {w:'主料', needColon:true},
+      {w:'辅料', needColon:true},
+      {w:'配料', needColon:true},
+      {w:'调料', needColon:true},
+      {w:'调味料', needColon:true},
+      {w:'调味', needColon:true},
+      {w:'准备', needColon:true},
+      {w:'做法', needColon:true},
+      {w:'分步', needColon:true},
+      {w:'步骤', needColon:true},
+      {w:'流程', needColon:true},
+      {w:'教程', needColon:true},
+      {w:'下厨步骤', needColon:true},
+      {w:'下厨', needColon:true},
+      {w:'Tips', needColon:true},
+      {w:'tips', needColon:true},
+      {w:'TIPS', needColon:true},
+      {w:'提示', needColon:true},
+      {w:'贴士', needColon:true},
+      {w:'经验', needColon:true},
+      {w:'心得', needColon:true},
+      {w:'注意', needColon:true},
+    ];
+    headerWords.sort(function(a,b){ return b.w.length-a.w.length; }); // 长的优先匹配
+    headerWords.forEach(function(item){
+      var w=item.w;
+      var escaped=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      var re;
+      if(item.needColon){
+        // 必须：词后面跟冒号/顿号，或词后面跟空白+数字编号/换行
+        re=new RegExp('([^\\n\\s])\\s*('+escaped+')\\s*([:：、]|\\d|[①②③④⑤⑥⑦⑧⑨⑩]|$|\\n)','g');
+        raw=raw.replace(re, function(m, prev, kw, tail){
+          var cc=prev.charCodeAt(0);
+          if(cc>=0xD800 && cc<=0xDBFF) return m; // 不拆 surrogate
+          return prev + '\n' + kw + (tail===undefined?'':tail);
+        });
+      } else {
+        // 长词：相对宽松
+        re=new RegExp('([^\\n\\s])\\s*('+escaped+'\\s*[:：]?)','g');
+        raw=raw.replace(re, function(m, prev, kw){
+          var cc=prev.charCodeAt(0);
+          if(cc>=0xD800 && cc<=0xDBFF) return m;
+          return prev + '\n' + kw;
+        });
+      }
+    });
+    var rawLines=raw.split(/\n/).map(function(l){return l.trim();});
+
+    // 2. 提取菜名（标题）
+    var title='';
+    // 优先第一对 【】 或 《》
+    var bracketM=raw.match(/[【\[《]([^\]】》]{1,40})[】\]》]/);
+    if(bracketM){
+      var cand=bracketM[1].replace(/(的)?(做法|教程|食谱|recipe|详细|步骤|超|超绝|巨|绝了|无敌|保姆级|零失败|懒人|简单|快手|家常|版|秘方|秘诀)$/i,'').trim();
+      if(cand.length>=2) title=cand;
+    }
+    if(!title){
+      var colM=raw.match(/^(?:菜名|名称|菜名儿|菜品|标题|今日(?:分享|菜)?|今日份|【推荐】|[Dd]ish)?\s*[:：]\s*(.+?)(?:\n|$)/m);
+      if(colM) title=colM[1].trim();
+    }
+    if(!title){
+      // 取第一段里最短且不含 ":"/句号的文字
+      var firstFew=rawLines.slice(0,4).filter(function(l){ return l.length>=2 && l.length<=35 && !/[:：。；]/.test(l) && !/食材|用料|材料|原料|主料|辅料|配料|调料|准备|做法|步骤|制作|教程|提示|贴士|tip|tips/i.test(l); });
+      if(firstFew.length>0){
+        var t=firstFew[0].replace(/^[#\-\*·\s•●▪◆★✨🔥💯🥘🍳💡👩‍🍳]+\s*/,'').replace(/[#\-\*·\s]+$/,'').trim();
+        if(t.length<=30 && !/^\d/.test(t)) title=t;
+      }
+    }
+    title=title.replace(/\s*(的)?(做法|教程|食谱|详细|步骤|recipe)$/i,'').trim();
+    if(title.length>40) title=title.slice(0,37)+'…';
+    result.title=title;
+
+    // 3. 划分段落（智能）：
+    //    识别 "食材块" "步骤块" "其他"
+    var blocks=[]; // [{mode: 'ing'|'step'|'tip'|'other', text:''}]
+    var curMode='other', curText='';
+    var flush=function(){
+      if(curText.trim()) blocks.push({mode:curMode, text:curText.trim()});
+      curText='';
+    };
+    var ingHeader=/^(食材准备|所需食材|准备食材|食材清单|食材明细|准备工作|准备材料|配料表|配菜清单|用料清单|食材|用料|材料|原料|主料|辅料|配料表?|调料|调味料|调味)[\s:：]*$/;
+    var stepHeader=/^(做法步骤|制作步骤|烹饪步骤|详细步骤|操作步骤|操作流程|制作流程|烹饪教程|做法教程|制作方法|烹饪方法|家常做法|做法大全|详细做法|分步|步骤|做法|流程|教程|下厨步骤|下厨)[\s:：]*$/;
+    var tipHeader=/^(温馨提示|注意事项|食用小贴士|厨房小贴士|家常小贴士|烹调小提示|新手小贴士|烹饪小窍门|烹调小窍门|小提示|小贴士|贴士|小技巧|提示|Tips|tips|TIPS|经验分享|经验|心得|注意)[\s:：]*$/;
+    var ING_KNOWN={'食材准备':1,'所需食材':1,'准备食材':1,'食材清单':1,'食材明细':1,'准备工作':1,'准备材料':1,'配料表':1,'配菜清单':1,'用料清单':1,'食材':1,'用料':1,'材料':1,'原料':1,'主料':1,'辅料':1,'配料':1,'调料':1,'调味料':1,'调味':1};
+    var STEP_KNOWN={'做法步骤':1,'制作步骤':1,'烹饪步骤':1,'详细步骤':1,'操作步骤':1,'操作流程':1,'制作流程':1,'烹饪教程':1,'做法教程':1,'制作方法':1,'烹饪方法':1,'家常做法':1,'做法大全':1,'详细做法':1,'分步':1,'步骤':1,'做法':1,'流程':1,'教程':1,'下厨':1,'下厨步骤':1};
+    var TIP_KNOWN={'温馨提示':1,'注意事项':1,'食用小贴士':1,'厨房小贴士':1,'家常小贴士':1,'烹调小提示':1,'新手小贴士':1,'烹饪小窍门':1,'烹调小窍门':1,'小提示':1,'小贴士':1,'贴士':1,'小技巧':1,'提示':1,'经验分享':1,'经验':1,'心得':1,'注意':1,'Tips':1,'tips':1,'TIPS':1};
+    function isHeaderLine(stripped, strictRe, knownDict){
+      if(strictRe.test(stripped)) return true;
+      if(!stripped) return false;
+      var colonIdx=stripped.search(/[:：]/);
+      if(colonIdx>=0 && colonIdx<=10){
+        var hdr=stripped.slice(0,colonIdx).trim();
+        if(strictRe.test(hdr)) return true;
+        if(hdr && knownDict[hdr]) return true;
+      }
+      return false;
+    }
+    // 剥离行头 emoji / 符号的帮助函数
+    function stripHeadMarks(s){
+      return (s||'').replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F02F}·•●▪◆★✨🔥💯🥘🍳💡👩‍🍳♡♥❣⭐➤➜▶️→\s\-*#]+/u,'').trim();
+    }
+    rawLines.forEach(function(ln){
+      if(!ln){ flush(); return; } // 空行 → 分段
+      var stripped=stripHeadMarks(ln);
+      // 宽松"是不是一句完整的话"的启发式：含句号/感叹号/问号 >=1 且长度>=25，或者是纯句子
+      // 但如果行前10字就命中了"已知 header + 冒号"格式（比如"小Tips：炖牛肉一定要用热水..."），仍然认定它是 header 行
+      var isSentence = stripped.length>=25 && /[。！？!?]/.test(stripped);
+      // 特殊：前缀就带 header+冒号（长句但其实是标题行）→ 强制不算 sentence
+      var colonIdxH=stripped.search(/[:：]/);
+      if(colonIdxH>=0 && colonIdxH<=12){
+        var hdrCheck=stripped.slice(0,colonIdxH).trim();
+        if(ING_KNOWN[hdrCheck] || STEP_KNOWN[hdrCheck] || TIP_KNOWN[hdrCheck]) isSentence=false;
+      }
+      if(!isSentence && isHeaderLine(stripped, ingHeader, ING_KNOWN)){
+        flush(); curMode='ing';
+        var cidx=stripped.search(/[:：]/);
+        var rest=(cidx>=0 ? stripped.slice(cidx+1) : '').trim();
+        curText=rest? (rest+'\n') : '';
+        return;
+      }
+      if(!isSentence && isHeaderLine(stripped, stepHeader, STEP_KNOWN)){
+        flush(); curMode='step';
+        var c2=stripped.search(/[:：]/);
+        var rest2=(c2>=0 ? stripped.slice(c2+1) : '').trim();
+        curText=rest2? (rest2+'\n') : '';
+        return;
+      }
+      if(!isSentence && isHeaderLine(stripped, tipHeader, TIP_KNOWN)){
+        flush(); curMode='tip';
+        var c3=stripped.search(/[:：]/);
+        var rest3=(c3>=0 ? stripped.slice(c3+1) : '').trim();
+        curText=rest3? (rest3+'\n') : '';
+        return;
+      }
+      curText+=ln+'\n';
+    });
+    flush();
+    // 如果没有明确的块（整段没有写"食材/做法"），启发式：第一段若短作为标题不算，剩下的前半段偏食材关键词=ing，后半段若含数字+句号=step，否则 whole=step
+    var ingBlocks=blocks.filter(function(b){return b.mode==='ing';});
+    var stepBlocks=blocks.filter(function(b){return b.mode==='step';});
+    var otherBlocks=blocks.filter(function(b){return b.mode==='other';});
+    if(ingBlocks.length===0 && stepBlocks.length===0 && blocks.length>0){
+      // 无结构文本：按句号/换行+编号拆分
+      var joined=blocks.map(function(b){return b.text;}).join('\n');
+      blocks=[{mode:'unk', text:joined}];
+    }
+    var blockIngText=ingBlocks.map(function(b){return b.text;}).join('\n').trim();
+    var blockStepText=stepBlocks.map(function(b){return b.text;}).join('\n').trim();
+    var blockTipText=blocks.filter(function(b){return b.mode==='tip';}).map(function(b){return b.text;}).join('\n').trim();
+    var blockUnkText=blocks.filter(function(b){return b.mode==='unk'||b.mode==='other';}).map(function(b){return b.text;}).join('\n').trim();
+
+    // 4. 提取食材：优先从 ing 块取
+    var ingredients=[];
+    var ingSrc=blockIngText;
+    if(!ingSrc && blockUnkText){
+      // 从 unknown 块里扫前半段看食材
+      ingSrc=blockUnkText.split(/\n/).slice(0,Math.ceil(blockUnkText.split(/\n/).length/2)).join('\n');
+    }
+    if(ingSrc){
+      // 按"行 + 顿号 + 分号 + 逗号 + & + 和 + 加号 + 斜杠"拆
+      var ingTokens=[];
+      ingSrc.split(/\n+/).forEach(function(line){
+        line=line.trim();
+        if(!line) return;
+        // 去掉行头的符号
+        line=line.replace(/^[\-·\*\d\.\)）】\]\s•●▪◆★]+/,'').trim();
+        if(!line) return;
+        // 若整行含多个句号（是句子），不拆
+        if((line.match(/[。！？!?]/g)||[]).length>=2) return;
+        // 拆分策略（改进版）
+        var parts=[];
+        if(/[、，,；;]/.test(line)){
+          // 有中文顿号/逗号：按标点拆（最常用，最可靠）
+          parts=line.split(/[、，,；;]+/);
+        } else if(/\s\s+/.test(line)){
+          // 存在两个以上空格分隔，直接拆
+          parts=line.split(/\s{2,}/);
+        } else {
+          // 单个空格分隔的 "西红柿 2个 鸡蛋 3个 盐 少许" 这种模式：
+          // 用智能正则：匹配"食材字串 + 可选数量 + 单位/适量/少许" 作为一个完整项
+          // 食材字串允许是 中文/英文/数字（如十三香、3A粉、VC），但数量部分必须含数字
+          var pattern=/(.*?)(\d*\.?\d+\s*(?:勺|汤匙|大匙|小匙|茶匙|克|g|kg|毫升|ml|L|斤|两|个|只|颗|片|块|根|条|朵|瓣|节|把|束|盒|包|罐|瓶|滴|小撮|撮|适量|少许|若干|一些|备用|多点|少点|少量|大半|茶匙|大勺|小勺|杯|左右|约)?)/g;
+          // 更简单稳定：在"数量+单位"模式前切一刀
+          var qtyUnitPattern=/(\d*\.?\d+\s*(?:勺|汤匙|大匙|小匙|茶匙|克|g|kg|毫升|ml|L|斤|两|个|只|颗|片|块|根|条|朵|瓣|节|把|束|盒|包|罐|瓶|滴|小撮|撮|适量|少许|若干|一些|备用|多点|少点|少量|大半|茶匙|大勺|小勺|杯|左右|约))/g;
+          var buf='';
+          var lastIdx=0;
+          var qm;
+          var tokens=[];
+          while((qm=qtyUnitPattern.exec(line))!==null){
+            var qStart=qm.index;
+            var qEnd=qStart+qm[0].length;
+            // 从 lastIdx 到 qStart 前是食材名；qm[0]是数量单位
+            var nmPart=line.slice(lastIdx,qStart).trim();
+            var qPart=qm[0].trim();
+            if(nmPart){
+              // 若 nmPart 里还含"适量/少许/备用"这种无数字词（如 "盐 适量"），tokens 可能为空——已经由 qPart 覆盖
+              tokens.push((nmPart+' '+(qPart||'')).trim());
+            } else if(qPart && tokens.length>0){
+              // 把qPart拼到上一个token
+              tokens[tokens.length-1]=(tokens[tokens.length-1]+' '+qPart).trim();
+            } else if(qPart){
+              tokens.push(qPart);
+            }
+            lastIdx=qEnd;
+          }
+          // 剩余部分（通常是最后一个食材+可能的无数字修饰词）
+          var tail=line.slice(lastIdx).trim();
+          if(tail){
+            // 可能是"盐 适量"或"葱花"、"料酒 少许"这种 → 按单个空格再拆最后层
+            if(/\s/.test(tail) && /(适量|少许|若干|备用|一些|多点|少点|少量)$/.test(tail)){
+              tokens.push(tail);
+            } else if(!/\s/.test(tail)){
+              tokens.push(tail);
+            } else {
+              // 还有纯空格残留的情况（比如"土豆 胡萝卜"），拆之
+              tail.split(/\s+/).forEach(function(t){ if(t) tokens.push(t); });
+            }
+          }
+          if(tokens.length>=2){
+            parts=tokens;
+          } else {
+            parts=[line];
+          }
+        }
+        if(parts) parts.forEach(function(p){ p=p.trim(); if(p) ingTokens.push(p); });
+      });
+      var seen={};
+      ingTokens.forEach(function(t){
+        t=t.replace(/^[\-·\*\s•●▪◆★()（）]+/,'').replace(/[\-·\*\s]+$/g,'').trim();
+        if(!t || t.length>30) return;
+        if(/[。！？!?]/.test(t) && t.length>15) return;
+        if(!/[A-Za-z\u4e00-\u9fa5]/.test(t)) return;
+        // 剔除纯标题/冒号的伪食材项，比如"准备：""食材：""备注："之类
+        if(/^(食材|用料|材料|原料|主料|辅料|配料|调料|调味|准备|备注|说明|注意|步骤|做法|提示|贴士|小料|蘸料|配菜)\s*[:：]?$/.test(t)) return;
+        // 剔除像"做法步骤：1.xxx"这种句子（含句号或"步骤"字）
+        if(/做法|步骤|教程|提示|贴士|分享|大家好|哈喽|朋友们|我们|今天|准备|开吃|出锅|出锅啦|绝了|超香|超下饭|绝配|全家|小孩|宝宝|老公|做法如下|你学会|快来|记得|点赞|收藏|关注|三连/.test(t) && t.length>10) return;
+        var k=t.replace(/\s+/g,'').toLowerCase();
+        if(seen[k]) return;
+        seen[k]=true; ingredients.push(t);
+      });
+    }
+    // 词库兜底扫 unknown + step 块
+    if(ingredients.length<=1){
+      var scanned=[]; var seen2={};
+      var bigSource=[blockUnkText,blockStepText,blockIngText,blockTipText].join(' \n ');
+      COMMON_ING_HINTS.forEach(function(wd){
+        if(seen2[wd]) return;
+        if(new RegExp(wd.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(bigSource)){
+          scanned.push(wd); seen2[wd]=true;
+        }
+      });
+      if(scanned.length>ingredients.length){
+        var map={};
+        ingredients.forEach(function(x){ map[x.replace(/\s+/g,'')]=x; });
+        scanned.forEach(function(x){
+          var dup=false;
+          Object.keys(map).forEach(function(k){ if(k.indexOf(x)!==-1) dup=true; });
+          if(!dup) map[x]=x;
+        });
+        ingredients=Object.keys(map).map(function(k){return map[k];});
+      }
+    }
+    // 清洗食材项：去掉数量单位/括号备注，得到纯食材名用于 tags & 勾选
+    // 注意：前缀修饰词只能用"整词匹配 + 后接'的'或数量"的严格模式，否则会误伤"土豆→豆、生抽→抽、冰糖→糖、大葱→葱"
+    var prefixPatterns=[
+      '去壳','去皮','去骨','切片','切块','切丝','切末','剁碎','切条','切段','切粒',
+      '肥瘦相间','纯瘦','纯肥','带皮','无皮','带骨','去刺','剔骨','去皮去骨',
+      '冰鲜','冷冻','鲜冻','卤制','酱制','腌制','泡制','秘制','五香','麻辣','香辣','酸甜','酸辣',
+      '精品','优质','特级','一级','新鲜','本地','野生','农家','自制','手工','精选','现杀','现切',
+      '一到两个','一到三个','两到三个','三到四个','一两个','两三个','三四个',
+      '大约','大概','左右'
+    ];
+    var monoPrefixMustDe=['嫩','老','干','鲜','生','熟','小','大','土','新','冰','香','咸','甜','辣','麻','酸','卤','酱','腌','泡','净','纯'];
+    var cleanedIngredients=ingredients.map(function(it){
+      var s=it.replace(/\s*[（(\[].*?[)）\]]/g,'');
+      // 去掉末尾的数量 + 单位
+      s=s.replace(/\s*\d*\.?\d+\s*(?:勺|汤匙|大匙|小匙|茶匙|克|g|kg|毫升|ml|斤|两|个|只|颗|片|块|根|条|朵|瓣|节|把|束|盒|包|罐|瓶|滴|小撮|撮|适量|少许|若干|一些|备用|多点|少点|少量|大半|茶匙|大勺|小勺|杯|左右|约)?\s*$/,'');
+      // 去掉多字词前缀（严格）
+      prefixPatterns.forEach(function(pfx){
+        var re=new RegExp('^'+pfx.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:的)?\\s*');
+        s=s.replace(re,'');
+      });
+      // 去掉单字前缀：必须带"的"字（例如"嫩的"、"干的"），避免误删"生抽→抽"
+      monoPrefixMustDe.forEach(function(pfx){
+        var re=new RegExp('^'+pfx.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'的\\s*');
+        s=s.replace(re,'');
+      });
+      s=s.trim();
+      return s || it;
+    }).filter(function(x){ return x && x.length>=1; });
+    result.ingredients=cleanedIngredients.filter(Boolean);
+
+    // 5. 提取步骤：
+    var steps=[];
+    var stepSource=(blockStepText || blockUnkText || raw).trim();
+    if(stepSource){
+      // 先把所有换行/多空白归一化成一个空格（步骤编号切分靠数字+分隔符，不依赖换行）
+      // 但如果步骤块里有 标题行（食材/做法），先过滤掉那些
+      var normalized=stepSource
+        .split(/\n+/)
+        .map(function(lineOri){ return lineOri.trim(); })
+        .filter(function(line){
+          if(!line) return false;
+          // 过滤纯标题行
+          if(/^(食材|用料|材料|原料|主料|辅料|配料|调料|调味|准备|小贴士|贴士|温馨提示|提示|注意事项|小技巧|Tips|tips|TIPS|💡|🥘|🔥|✨|哈喽|大家好|今天分享|分享一道|我是|本期|这期|我们来|看完|记得|点赞|收藏|关注|欢迎)$/i.test(line)) return false;
+          // 过滤行首标题+冒号（空内容）
+          if(/^(食材准备|所需食材|准备食材|食材清单|食材明细|准备工作|准备材料|配料表|配菜清单|用料清单|做法步骤|制作步骤|烹饪步骤|详细步骤|操作步骤|操作流程|制作流程|烹饪教程|做法教程|制作方法|烹饪方法|家常做法|做法大全|详细做法|分步|步骤|做法|流程|教程|下厨步骤|下厨|温馨提示|注意事项|小提示|小贴士|小技巧|Tips|tips|TIPS)\s*[:：]?$/i.test(line)) return false;
+          return true;
+        })
+        .join(' ');
+      // 用 marker 植入法拆分步骤编号
+      var marker='\u0001';
+      var scanRe=/(^|[。；;！!？?…—~\s])\s*(?:第\s*\d+\s*步\s*[:：.、]?|步骤\s*\d+\s*[:：.、]?|Step\s*\d+\s*[:：.\-]?|STEP\s*\d+\s*[:：.\-]?|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕]|(?:\d+)\s*[.、\)）\]：:])\s*/g;
+      var marked=normalized.replace(scanRe, function(m, prefix){
+        return (prefix||'') + marker;
+      });
+      var segs=marked.split(marker).map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+      // 最后清理每个 seg 末尾的 Tip 尾巴（💡、💡小、Tips：... 这种常粘在最后）
+      var tipTailPattern=/(?:[\s]|^)((?:\ud83d\udca1|💡|✨|🔥)?\s*(?:小?(?:Tips|tips|TIPS|提示|贴士|技巧)|温馨提示|注意事项|烹饪小窍门|烹调小窍门)\s*[:：]?.*)$/;
+      for(var i=0;i<segs.length;i++){
+        var m=segs[i].match(tipTailPattern);
+        if(m && i===segs.length-1){
+          // 只在最后一条才允许截断"整段tips正文"
+          segs[i]=segs[i].slice(0, m.index).trim();
+        } else if(m && m[1].length<=15){
+          // 在中间段只允许切掉"💡 小Tips"这种短尾巴（15字以内），避免误伤真实步骤
+          segs[i]=segs[i].slice(0, m.index).trim();
+        }
+      }
+      // 在最后一段，如果匹配到任何💡或Tips开头的词，只截到💡/Tips之前（避免"配米饭绝了~ 💡小 Tips：..."残留）
+      if(segs.length>0){
+        var last=segs[segs.length-1];
+        // 从"💡/Tips/小贴士/提示"这些词的起头截断（💡 必须是空格前或句中孤立出现）
+        var cutIdx=Infinity;
+        var patterns=['💡','\ud83d\udca1','小Tips','小提示','小贴士','Tips：','Tips ','tips：','TIPS：','温馨提示：','注意事项：','贴士：'];
+        patterns.forEach(function(p){ var idx=last.indexOf(p); if(idx>=0 && idx<cutIdx) cutIdx=idx; });
+        if(cutIdx < last.length-1){
+          // 但"💡"如果在前面（步骤中间出现罕见）可能切错，所以至少保证切完还剩 6 个字，否则不切
+          var cut=last.slice(0, cutIdx).trim();
+          if(cut.length>=6) segs[segs.length-1]=cut;
+        }
+      }
+      segs=segs.filter(function(s){return s.length>0;});
+      if(segs.length>=2){
+        steps=segs;
+      } else if(segs.length===1){
+        // 只有一段，可能是无编号的大段文字：按句号/问号切（但保留"..."的句号）
+        var parts=segs[0].split(/(?<=[。；;！!？?])\s+/).map(function(s){return s.trim();}).filter(function(s){return s.length>=3;});
+        steps=parts.length>0 ? parts : segs;
+      }
+      // 清理步骤
+      steps=steps.map(function(s){
+        s=(s||'').replace(/^\s*[\-·\*\s•●▪◆★✨💯➤➜▶️→]+/,'');
+        s=s.replace(/^第\s*\d+\s*步\s*[:：.、]?\s*/i,'');
+        s=s.replace(/^Step\s*\d+\s*[:：.\-]?\s*/i,'');
+        s=s.replace(/^\d+\s*[.、\)）\]：:]\s*/,'');
+        s=s.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕]\s*/,'');
+        s=s.replace(/\s+/g,' ').trim();
+        if(s.length>300) s=s.slice(0,297)+'…';
+        return s;
+      }).filter(function(s){
+        if(!s || s.length<2) return false;
+        if(/^(食材|用料|材料|原料|主料|辅料|配料|调料|调味|准备|小贴士|贴士|温馨提示|提示|注意事项|小技巧|Tips|tips|TIPS)$/i.test(s)) return false;
+        return true;
+      });
+      // 过滤"食材清单类型"：含顿号+单位但无动词，丢到最后
+      var hasVerbRegex=/切|洗|剁|煮|炒|煎|炸|蒸|炖|煲|焖|烤|烧|拌|腌|渍|泡|汆|焯|卤|酱|烩|扒|煸|熬|滚|下|放|加|倒|淋|撒|翻|搅|打|揉|擀|塞|夹|卷|摆|铺|盖|裹|沾|蘸|装|盛|取|备|淘|冲|调|配|处理|清洗|洗净|切好|备用|捞出|下锅|烧热|倒入|加入|放入|拌匀|翻炒|出锅|上桌|开吃|点缀|装盘|收汁|定型|上色|入味|调味|焯水|过油|上浆|挂糊|勾芡|泼油|浇汁|铺平|压实|冷藏|冷冻|发酵|醒发|烤制|烘焙|蒸制|隔水|蒸透|煮熟|煮软|煮烂|加热|放凉|晾凉|冰镇|保温|加盖|盖盖|焖煮|慢炖|小火|中火|大火|烧开|煮沸|浓缩/;
+      steps=steps.filter(function(s){
+        if(s.length<=12 && !hasVerbRegex.test(s) && /(勺|汤匙|小匙|茶匙|克|g|kg|毫升|ml|斤|两|个|只|颗|片|块|根|条|朵|瓣|节|把|束|盒|包|罐|瓶|滴|小撮|撮|适量|少许|若干|一些|备用)$/.test(s)) return false;
+        return true;
+      });
+      // 去重
+      var seenStep={};
+      steps=steps.filter(function(s){
+        var k=s.replace(/\s+/g,'');
+        if(seenStep[k]) return false;
+        seenStep[k]=true; return true;
+      });
+    }
+    // 保底：如果还是 0 步，按句号切前几句
+    if(steps.length===0){
+      var fallback=raw.split(/[。；;\n！!？?]+/).map(function(s){return s.trim();}).filter(function(s){return s.length>=6 && s.length<=160 && /[切|洗|炒|煮|炖|蒸|炸|煎|加|放|倒|拌|腌|下|入|出|烧|热|凉|泡|冲|调|配|揉|擀|铺|盖|装|盛|取|煮|捞|焯水|出锅|上桌|开吃|点缀|装盘|勾芡|调味|备用]/.test(s);}).slice(0,10);
+      steps=fallback;
+    }
+    result.steps=steps;
+    return result;
+  }
+
+  function renderAiPreview(parsed){
+    var box=$('aiPreview'); if(!box) return;
+    var html='<h4>🤖 AI 解析结果（预览）</h4>';
+    if(parsed.title){
+      html+='<div class="pv-title">🍽 '+esc(parsed.title)+'</div>';
+    }else{
+      html+='<div class="pv-title" style="color:var(--muted);">（未识别到菜名，可手动填写）</div>';
+    }
+    html+='<div class="pv-group"><div class="pv-label">识别出的食材（'+(parsed.ingredients.length)+'）</div>';
+    if(parsed.ingredients.length===0){
+      html+='<div style="font-size:12px;color:var(--muted);">未识别到食材，您可稍后手动勾选。</div>';
+    } else {
+      html+='<div class="pv-ings">'+parsed.ingredients.map(function(n){return '<span class="pv-ing">'+esc(n)+'</span>';}).join('')+'</div>';
+    }
+    html+='</div>';
+    html+='<div class="pv-group"><div class="pv-label">识别出的制作步骤（'+(parsed.steps.length)+'）</div>';
+    if(parsed.steps.length===0){
+      html+='<div style="font-size:12px;color:var(--muted);">未识别到步骤，建议把包含"1./2./第一步"的做法文字粘贴进来。</div>';
+    } else {
+      html+='<ol class="pv-steps">'+parsed.steps.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ol>';
+    }
+    html+='</div>';
+    box.innerHTML=html;
+    box.style.display='block';
+  }
+
+  function runAiParse(){
+    var txt=$('aiPasteBox').value.trim();
+    if(!txt){ toast('请先粘贴抖音菜谱文案哦~'); $('aiPasteBox').focus(); return; }
+    $('aiLoader').style.display='block';
+    $('aiPreview').style.display='none';
+    $('aiFillActions').style.display='none';
+    setTimeout(function(){
+      try{
+        __aiParsed=aiParseText(txt);
+        var hasAny=__aiParsed.title || __aiParsed.ingredients.length || __aiParsed.steps.length;
+        if(!hasAny){
+          toast('没有识别到有效内容，换一段更完整的文案试试？', 'warn');
+        } else {
+          renderAiPreview(__aiParsed);
+          $('aiFillActions').style.display='flex';
+          var t='✅ 解析完成：识别到菜名 '
+            +(__aiParsed.title?' ✓':' ✗')
+            +'，食材 '+__aiParsed.ingredients.length+' 项'
+            +'，步骤 '+__aiParsed.steps.length+' 步';
+          toast(t);
+        }
+      }catch(e){
+        console.error(e);
+        toast('解析出错了，请重试');
+      }finally{
+        $('aiLoader').style.display='none';
+      }
+    }, 650); // 模拟AI思考时间，带来更顺滑的体验
+  }
+
+  function confirmAiFill(){
+    if(!__aiParsed){ toast('请先点「开始智能解析」哦~'); return; }
+    var p=__aiParsed;
+    // 填标题
+    var tEl=$('r-title'); if(tEl && p.title && !tEl.value.trim()){ tEl.value=p.title.slice(0,40); }
+    // 填食材（加入 pickedIngs，注意：pickedIngs 是 食材名 字符串数组，不是对象）
+    if(p.ingredients && p.ingredients.length){
+      var added=0;
+      p.ingredients.forEach(function(nm){
+        nm=(nm||'').trim(); if(!nm) return;
+        // 去除多余的数量（末尾的空格+数量+单位），保留纯食材名（含空格数量则整体作为 tag 名也可以）
+        var clean=nm.replace(/\s+\d+(\.\d+)?\s*(勺|汤匙|大匙|小匙|茶匙|克|g|kg|毫升|ml|L|斤|两|个|只|颗|片|块|根|条|朵|瓣|节|把|束|盒|包|罐|瓶|滴|小撮|撮|适量|少许|若干|一些|备用|多点|少点|少量)\s*$/,'').trim();
+        clean=clean.replace(/\s*[（(].*?[)）]\s*$/g,'').trim();
+        if(!clean) clean=nm;
+        // 去除常见无意义的"整词"前缀：仅当 clean 长度 >2 时，把"新鲜的/干的/鲜的/嫩的/老的/熟的/生的" 这种带"的"的整词前缀剥离
+        // 不剥离 单字前缀，避免"土豆→豆"、"生抽→抽"等错误
+        if(clean.length>2){ clean=clean.replace(/^(新鲜|精品|优质|特级|本地|上等|农家|手切|现切|真空)[的]?/,'').trim() || clean; }
+        // pickedIngs 存字符串，some 用全等比较
+        if(!pickedIngs.some(function(x){ return typeof x==='string' && x.toLowerCase()===clean.toLowerCase(); })){
+          pickedIngs.push(clean);
+          added++;
+        }
+      });
+      renderIngPool(); renderIngSuggest();
+      // 同步写 r-ings hidden（防止 renderIngPool 没更新导致 join 时读到旧值）
+      var rIngsEl=$('r-ings'); if(rIngsEl) rIngsEl.value=pickedIngs.join('，');
+    }
+    // 填步骤：清空后按解析结果重建
+    if(p.steps && p.steps.length){
+      var stepList=$('formStepList'); if(stepList){
+        stepList.innerHTML='';
+        p.steps.forEach(function(s){ addFormStepRow(s); });
+      }
+    }
+    // 若标题已填但无标签，从食材名/标题推1-2个标签
+    var tagsEl=$('r-tags');
+    if(tagsEl && !tagsEl.value.trim()){
+      var sug=[];
+      var title=p.title || ($('r-title')? $('r-title').value:'');
+      var fullText=(($('aiPasteBox')?$('aiPasteBox').value:'')+' '+title);
+      if(/简单|快手|懒人|10分钟|秒做|速食|快速|不费劲|零失败|新手|小白|一学就会|手残党/.test(fullText)) sug.push('快手');
+      if(/家常|下饭|米饭|家常菜|家人|妈妈|经典|老式|传统/.test(fullText)) sug.push('家常');
+      if(/早餐|早点|早饭|早起|早午餐|brunch/i.test(fullText) && !/晚餐|午餐|宵夜|夜宵/.test(fullText)) sug.push('早餐');
+      if(/晚餐|夜宵|宵夜|晚上|下酒菜|喝酒|深夜|聚会/.test(fullText)) sug.push('晚餐');
+      if(/减脂|健康|轻食|减肥|低卡|瘦身|素食|清淡|无油|少盐|控糖|健身/.test(fullText)) sug.push('健康');
+      if(/孩子|宝宝|娃|儿童|小朋友|辅食|幼儿/.test(fullText)) sug.push('宝宝');
+      if(sug.length){
+        tagsEl.value=sug.slice(0,3).join(', ');
+      }
+    }
+    closeAiParse();
+    toast('✨ 已智能填入，您可以继续微调再保存~', 'ok');
+  }
+
+  function bindAiParseUi(){
+    if(!$('aiParseMask')) return;
+    $('aiParseClose').addEventListener('click', closeAiParse);
+    $('aiParseMask').addEventListener('click', function(e){ if(e.target.id==='aiParseMask') closeAiParse(); });
+    $('aiClearBtn').addEventListener('click', function(){
+      $('aiPasteBox').value=''; $('aiPreview').style.display='none'; $('aiFillActions').style.display='none';
+      $('aiPasteBox').focus();
+    });
+    $('aiRunBtn').addEventListener('click', runAiParse);
+    $('aiConfirmFillBtn').addEventListener('click', confirmAiFill);
+    $('aiCancelFillBtn').addEventListener('click', function(){
+      $('aiPreview').style.display='none'; $('aiFillActions').style.display='none'; __aiParsed=null;
+      $('aiPasteBox').focus();
+    });
+    // 快捷键：Ctrl/⌘+Enter 开始解析
+    $('aiPasteBox').addEventListener('keydown', function(e){
+      if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); runAiParse(); }
+    });
+  }
+
   function addMissingToShop(ings){
     if(!ings || !ings.length){ toast('没有可加入的缺料'); return; }
     // 分类：要新增的 vs 已存在的（已在库存/已在待购）
@@ -4975,6 +5647,7 @@
   restoreDashOrder();
   renderAll();
   bindDashDrag();
+  bindAiParseUi();
   renderIngPool(); renderIngSuggest();
 
 })();
