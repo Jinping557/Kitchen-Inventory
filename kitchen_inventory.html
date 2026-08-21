@@ -3803,6 +3803,9 @@
     pickedIngs=(r.ings||[]).slice();
     renderIngPool(); renderIngSuggest();
     $('r-tags').value=(r.tags||[]).join('，');
+    var steps=(r.steps||[]).slice().filter(function(s){return s && s.trim();});
+    if(steps.length===0) steps=[''];
+    steps.forEach(function(s){ addFormStepRow(s); });
     $('recEditHint').style.display='block';
     $('recEditHint').textContent='正在编辑：'+(r.name||'')+'（保存即更新，点清空取消）';
     $('recSaveBtn').textContent='更新食谱';
@@ -3952,6 +3955,12 @@
       +'<div class="ing-suggest" id="ingSuggest" style="display:none;"><span class="ing-suggest-label">从库存中选择：</span></div>'
       +'</div></div>'
       +'<div class="field full"><label>标签（可选，逗号分隔）</label><input id="r-tags" type="text" placeholder="早餐, 快手" maxlength="80"></div>'
+      +'<div class="field full"><label>制作步骤（可选）</label>'
+      +'<div class="steps-editor" id="formStepsEditor">'
+      +'<p class="steps-hint">逐步记录做法，可拖动排序、删除。</p>'
+      +'<div id="formStepList"></div>'
+      +'<button type="button" class="btn ghost sm step-add-btn" id="formStepAddBtn">添加步骤</button>'
+      +'</div></div>'
       +'</div>'
       +'<input type="hidden" id="r-editId" value="">'
       +'<div class="form-actions"><button type="submit" class="btn" id="recSaveBtn">保存食谱</button>'
@@ -3967,7 +3976,10 @@
       var ings=pickedIngs.slice();
       if(ings.length===0){ toast('请至少添加一种食材'); return; }
       var tags=($('r-tags').value||'').split(/[,，、\s]+/).map(function(s){return s.trim();}).filter(Boolean);
-      var data={name:title, url:$('r-url').value.trim(), ings:ings, ingsText:ings.join('，'), tags:tags};
+      var stepInputs=document.querySelectorAll('#formStepList .step-input');
+      var steps=[];
+      stepInputs.forEach(function(inp){ var v=inp.value.trim(); if(v) steps.push(v); });
+      var data={name:title, url:$('r-url').value.trim(), ings:ings, ingsText:ings.join('，'), tags:tags, steps:steps};
       var eid=$('r-editId').value;
       if(eid){ data._id=eid; updateRecipe(data); } else { addRecipe(data); }
       closeFormModal();
@@ -3990,11 +4002,67 @@
       removeIng(parseInt(tag.dataset.i,10));
     });
     renderIngPool(); renderIngSuggest();
+    bindFormStepEditor();
+  }
+  function addFormStepRow(val){
+    val=val||'';
+    var stepList=$('formStepList'); if(!stepList) return;
+    var row=document.createElement('div');
+    row.className='step-row';
+    row.setAttribute('draggable','true');
+    row.innerHTML='<span class="step-drag-handle" title="拖动排序">☰</span>'
+      +'<span class="step-num">1</span>'
+      +'<input type="text" class="step-input" value="'+esc(val)+'" placeholder="输入这一步的做法…">'
+      +'<button type="button" class="step-del-btn" title="删除">×</button>';
+    stepList.appendChild(row);
+    bindFormStepRow(row);
+    renumberFormSteps();
+  }
+  function bindFormStepRow(row){
+    row.querySelector('.step-del-btn').addEventListener('click', function(){
+      row.remove(); renumberFormSteps();
+    });
+    row.addEventListener('dragstart', function(e){
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain','step');
+    });
+    row.addEventListener('dragend', function(){
+      row.classList.remove('dragging');
+      renumberFormSteps();
+    });
+    row.addEventListener('dragover', function(e){
+      e.preventDefault();
+      var dragging=document.querySelector('#formStepList .step-row.dragging');
+      if(!dragging || dragging===row) return;
+      var rect=row.getBoundingClientRect();
+      var after=e.clientY > rect.top+rect.height/2;
+      if(after) row.parentNode.insertBefore(dragging, row.nextSibling);
+      else row.parentNode.insertBefore(dragging, row);
+      renumberFormSteps();
+    });
+    row.addEventListener('drop', function(e){ e.preventDefault(); });
+  }
+  function bindFormStepEditor(){
+    var addBtn=$('formStepAddBtn'); if(!addBtn) return;
+    addBtn.addEventListener('click', function(){ addFormStepRow(''); });
+    var stepList=$('formStepList'); if(stepList){
+      stepList.addEventListener('dragover', function(e){ e.preventDefault(); });
+    }
+  }
+  function renumberFormSteps(){
+    var rows=document.querySelectorAll('#formStepList .step-row');
+    rows.forEach(function(row,i){
+      var num=row.querySelector('.step-num'); if(num) num.textContent=(i+1);
+      var inp=row.querySelector('.step-input'); if(inp) inp.placeholder='第 '+(i+1)+' 步…';
+    });
   }
   function resetRecForm(){
     var f=$('recForm'); if(!f) return;
     $('r-editId').value=''; f.reset();
     pickedIngs=[]; renderIngPool(); renderIngSuggest();
+    var stepList=$('formStepList'); if(stepList) stepList.innerHTML='';
+    addFormStepRow('');
     $('recEditHint').style.display='none'; $('recSaveBtn').textContent='保存食谱';
   }
   function addMissingToShop(ings){
@@ -4697,6 +4765,7 @@
   $('addRecBtn').addEventListener('click', function(){
     openFormModal('添加食谱', getRecFormHtml());
     bindRecForm();
+    resetRecForm();
   });
 
   // 链接列表交互
