@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kitchen_inventory.html'
+      - 'README.md'
+      - 'LICENSE'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+# GITHUB_TOKEN 权限配置（Pages 官方部署必须）
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 确保同一时间只有一个部署在进行，避免并发冲突
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # ========== 构建 / 准备部署产物 ==========
+  build:
+    name: Build Pages Artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare Pages artifact directory
+        run: |
+          mkdir -p _site
+          # 主页面：拷贝一份为 index.html，使访问仓库根路径直接打开应用
+          cp kitchen_inventory.html _site/index.html
+          # 同时保留原始文件名，支持直接访问 kitchen_inventory.html
+          cp kitchen_inventory.html _site/kitchen_inventory.html
+          # 附带静态资源（如有需要可扩展）
+          [ -f README.md ] && cp README.md _site/ || true
+          [ -f LICENSE ] && cp LICENSE _site/ || true
+          echo "✅ Artifact prepared:"
+          ls -la _site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  # ========== 部署到 GitHub Pages ==========
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
