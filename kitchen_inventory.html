@@ -3297,7 +3297,10 @@
     <section class="panel" id="panel-stock">
       <div class="card">
         <h2>库存清单 <span class="tag" id="stockCount2" style="background:var(--herb)">4</span>
-          <button class="btn ghost sm" id="addInvBtn" style="margin-left:auto;">添加</button>
+          <span style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <button class="ai-add-btn" id="aiAddInvBtn"><span class="spark">✨</span>AI添加库存</button>
+            <button class="btn ghost sm" id="addInvBtn">添加</button>
+          </span>
         </h2>
         <div class="chips" id="stockFilterChips">
           <span class="chip active" data-f="all">全部</span>
@@ -3504,6 +3507,76 @@
         <button type="button" class="btn ghost" id="aiAddCancelBtn">再改改</button>
         <button type="button" class="btn" id="aiAddSaveBtn">✅ 确认并加入菜谱库</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI 添加库存独立弹窗（解析一段话 → 依次补全单位/数量 → 入库确认） -->
+<div class="ai-mask" id="aiAddInvMask" hidden="">
+  <div class="ai-box">
+    <div class="ai-head">
+      <div class="t"><span>✨</span>AI 添加库存<span id="aiAddInvCfgBadge" class="ai-config-tag" style="display:none;">已配置</span></div>
+      <span style="display:flex;gap:6px;align-items:center;">
+        <button class="ai-config-toggle" id="aiInvCfgToggleBtn" type="button">⚙️ 大模型配置</button>
+        <button class="ai-close" id="aiAddInvClose" type="button">×</button>
+      </span>
+    </div>
+    <div class="ai-body">
+      <p class="ai-hint">📋 用一段话描述你买的或家里已有的食材（如「我买了3个西红柿、2斤土豆、1瓶酱油、葱」），AI 会自动识别<b>名称/数量/单位</b>，缺单位/数量的会<b>依次弹窗补全</b>，最后像待购入库那样逐项确认。</p>
+
+      <!-- 大模型 API 配置面板（与 AI添加菜谱 共用同一份配置） -->
+      <div class="ai-config-panel" id="aiInvCfgPanel" hidden>
+        <div class="ai-config-row">
+          <label>大模型 API URL（OpenAI 兼容格式，<code>/v1/chat/completions</code>）</label>
+          <input id="aiInvCfgUrl" type="text" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
+          <div class="hint">与「AI添加菜谱」共用配置，保存一处即可。常见：阿里通义 <code>dashscope.aliyuncs.com/compatible-mode/v1/chat/completions</code>、DeepSeek <code>api.deepseek.com/v1/chat/completions</code>。</div>
+        </div>
+        <div class="ai-config-row">
+          <label>API Key</label>
+          <input id="aiInvCfgKey" type="password" placeholder="sk-...">
+          <div class="hint">密钥仅保存在浏览器本地（localStorage），不会上传服务器。</div>
+        </div>
+        <div class="ai-config-row">
+          <label>模型名</label>
+          <input id="aiInvCfgModel" type="text" placeholder="qwen-max / deepseek-chat / gpt-4o-mini">
+          <div class="hint">建议选支持中文 + JSON 输出的模型，如 <code>qwen-max</code>、<code>deepseek-chat</code>。</div>
+        </div>
+        <div class="ai-config-actions">
+          <button type="button" class="btn ghost" id="aiInvCfgTestBtn">🧪 测试连通</button>
+          <button type="button" class="btn" id="aiInvCfgSaveBtn">💾 保存配置</button>
+        </div>
+        <div class="ai-status" id="aiInvCfgStatus"></div>
+      </div>
+
+      <textarea id="aiAddInvTextBox" class="ai-paste input" placeholder='描述一下你买/已有的食材，AI 会自动拆分名称、数量、单位：&#10;&#10;我买了3个西红柿、2斤土豆、1瓶酱油、一把葱、半斤五花肉&#10;&#10;也可以只列名称：鸡蛋、牛奶、生菜、面粉'></textarea>
+
+      <div class="ai-actions">
+        <button type="button" class="btn ghost" id="aiAddInvClearBtn">清空</button>
+        <button type="button" class="btn" id="aiAddInvRunBtn">🧠 智能解析</button>
+      </div>
+
+      <div id="aiAddInvLoader" style="display:none;margin-top:14px;"><div class="ai-loader"><span class="spin"></span><span id="aiAddInvLoaderText">AI 正在识别食材名称/数量/单位…</span></div></div>
+
+      <div id="aiAddInvPreview" style="display:none;"></div>
+
+      <div id="aiAddInvActions" style="display:none;margin-top:14px;" class="ai-actions">
+        <button type="button" class="btn ghost" id="aiAddInvCancelBtn">再改改</button>
+        <button type="button" class="btn" id="aiAddInvStartBtn">✅ 开始依次确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 单值输入弹窗（依次补全单位 / 数量） -->
+<div class="confirm-mask" id="aiPromptMask" hidden="">
+  <div class="confirm-box" style="max-width:380px;text-align:left;">
+    <div class="t" id="aiPromptTitle" style="text-align:center;">请填写</div>
+    <div class="m" id="aiPromptMsg" style="margin-bottom:14px;text-align:center;"></div>
+    <input id="aiPromptInput" type="text" style="width:100%;padding:9px 12px;font-size:14px;border:1.5px solid var(--line-2);border-radius:var(--r-md);background:var(--cream);font-family:inherit;margin-bottom:6px;box-sizing:border-box;" />
+    <div id="aiPromptHint" style="font-size:11px;color:var(--muted);margin-bottom:14px;text-align:center;"></div>
+    <div class="confirm-acts">
+      <button class="btn ghost" id="aiPromptNo">跳过</button>
+      <button class="btn" id="aiPromptYes">确定</button>
     </div>
   </div>
 </div>
@@ -4889,8 +4962,9 @@
   function refreshAiCfgBadge(){
     var cfg=loadAiConfig();
     var badge=$('aiAddRecCfgBadge');
-    if(!badge) return;
-    badge.style.display = cfg.key ? 'inline-block' : 'none';
+    if(badge) badge.style.display = cfg.key ? 'inline-block' : 'none';
+    var badge2=$('aiAddInvCfgBadge');
+    if(badge2) badge2.style.display = cfg.key ? 'inline-block' : 'none';
   }
 
   function openAiAddRec(){
@@ -5219,6 +5293,513 @@
     });
     $('aiCfgTestBtn').addEventListener('click', testAiConfig);
     // 初始刷新徽章
+    refreshAiCfgBadge();
+  }
+
+  /* ===================================================================
+     AI 添加库存（独立入口）：解析一段话 → 依次弹窗补全单位/数量 → 入库确认
+     与 AI添加菜谱 共用同一份大模型配置（LS_AI）
+     =================================================================== */
+  var __aiAddInvParsed=null;          // 缓存解析结果 [{名称,数量,单位,备注?}]
+  var __aiInvItems=[];                // 待确认队列
+  var __aiInvIdx=0;                   // 当前处理到第几项
+  var __aiInvFlowActive=false;        // 流程是否激活（取消时停止）
+  var __aiPromptCb=null;              // 单值输入弹窗回调
+
+  function openAiAddInv(){
+    __aiAddInvParsed=null;
+    var mask=$('aiAddInvMask'); if(!mask) return;
+    mask.hidden=false;
+    if($('aiAddInvTextBox')) $('aiAddInvTextBox').value='';
+    if($('aiAddInvPreview')){ $('aiAddInvPreview').style.display='none'; $('aiAddInvPreview').innerHTML=''; }
+    if($('aiAddInvActions')) $('aiAddInvActions').style.display='none';
+    if($('aiAddInvLoader')) $('aiAddInvLoader').style.display='none';
+    if($('aiInvCfgPanel')) $('aiInvCfgPanel').hidden=true;
+    var cfg=loadAiConfig();
+    if($('aiInvCfgUrl')) $('aiInvCfgUrl').value=cfg.url;
+    if($('aiInvCfgKey')) $('aiInvCfgKey').value=cfg.key;
+    if($('aiInvCfgModel')) $('aiInvCfgModel').value=cfg.model;
+    refreshAiCfgBadge();
+    setTimeout(function(){ if($('aiAddInvTextBox')) $('aiAddInvTextBox').focus(); }, 50);
+  }
+  function closeAiAddInv(){
+    var mask=$('aiAddInvMask'); if(mask) mask.hidden=true;
+  }
+
+  /* ---------- 本地规则解析（无 API 时的降级方案） ---------- */
+  var INV_UNITS=['公斤','千克','斤','克','毫升','ml','升','L','瓶','袋','包','盒','罐','块','根','把','颗','头','条','只','张','片','个','箱','提','扎','捆'];
+  // 中文数字 → 阿拉伯数字（支持 0-999 之间的常见写法 + “半”=0.5）
+  function cnStrToNum(s){
+    if(s==null) return null;
+    s=String(s).trim();
+    if(!s) return null;
+    if(/^[0-9]+(?:\.[0-9]+)?$/.test(s)) return parseFloat(s);
+    if(s==='半') return 0.5;
+    var map={'零':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
+    if(s.length===1){
+      if(s==='十') return 10;
+      if(s==='百') return 100;
+      return s in map ? map[s] : null;
+    }
+    var m;
+    if((m=s.match(/^十(.+)$/))){ var a=map[m[1]]; return a!=null?10+a:10; }
+    if((m=s.match(/^(.+)十(.*)$/))){
+      var tens=map[m[1]]; if(tens==null) return null;
+      var ones=m[2]? (map[m[2]]||0):0;
+      return tens*10+ones;
+    }
+    if((m=s.match(/^(.+)百(.*)$/))){
+      var h=map[m[1]]; if(h==null) return null;
+      var rest=m[2]; if(!rest) return h*100;
+      var om=rest.match(/^(.?)十(.*)$/);
+      if(om){
+        var t=om[1]? (map[om[1]]||0):0;
+        var o=om[2]? (map[om[2]]||0):0;
+        return h*100+t*10+o;
+      }
+      return h*100 + (map[rest]||0);
+    }
+    return null;
+  }
+  function cleanInvName(s){
+    s=(s||'').trim().replace(/\s+/g,' ')
+      .replace(/^[,，、;；:：.。的了把是]+|[,，、;；:：.。的了把是]+$/g,'')
+      .trim();
+    return s;
+  }
+  // 从一小段（如“3个西红柿”/“土豆2斤”/“一把葱”/“酱油”）→ {名称,数量,单位}
+  // 阿拉伯数字 + 可选单位；中文数字 + 必须带单位（避免把“五花肉”里的“五”误判成数量）
+  function parseInvPart(p){
+    p=(p||'').trim();
+    if(!p) return null;
+    var units=INV_UNITS.slice().sort(function(a,b){return b.length-a.length;});
+    var unitAlt=units.join('|');
+    var re1=new RegExp('([0-9]+(?:\\.[0-9]+)?)\\s*('+unitAlt+')?');
+    var re2=new RegExp('([零一二三四五六七八九十百千两半]+)\\s*('+unitAlt+')');
+    var m1=p.match(re1);
+    var m2=p.match(re2);
+    var num, unit, matched='', m=null;
+    if(m1 && /^[0-9]/.test(m1[1])){
+      num=parseFloat(m1[1]); unit=m1[2]||''; matched=m1[0]; m=m1;
+    } else if(m2){
+      var cn=cnStrToNum(m2[1]);
+      if(cn!=null){ num=cn; unit=m2[2]||''; matched=m2[0]; m=m2; }
+      else { m=null; }
+    } else { m=null; }
+    var item={名称:'', 数量:undefined, 单位:''};
+    if(m && matched){
+      var before=p.slice(0, m.index).trim();
+      var after=p.slice(m.index + matched.length).trim();
+      var name=(before+' '+after).replace(/\s+/g,' ').trim();
+      name=cleanInvName(name);
+      if(!name) return {名称:'', 数量:num, 单位:unit}; // 整段只是 数字+单位，交给上层合并
+      item.名称=name; item.数量=num; item.单位=unit;
+      return item;
+    } else {
+      var name=cleanInvName(p);
+      if(!name) return null;
+      item.名称=name;
+      return item;
+    }
+  }
+  // 一段话 → [{名称,数量,单位}]
+  // 按 逗号/顿号/分号/换行/空格/“和/与/以及” 拆分；空格拆出“只有数量+单位”的小块时，
+  // 智能合并回相邻的名称（兼容“土豆 2斤”和“2斤 土豆”两种写法）
+  function aiParseInvText(raw){
+    raw=(raw||'').replace(/\r/g,'').trim();
+    if(!raw) return [];
+    raw=raw.replace(/[\u3000\u00a0]/g,' ').replace(/[ \t]+/g,' ').trim();
+    // 去掉开头的口语化短语（如“我买了”、“家里有”）
+    raw=raw.replace(/^(我刚?买了?|我买了?|刚买了?|今天买了?|买?了|家里有?|我有?|现有?|库存有?|购入了?|添置了?|补充了?|采购了?|进货了?)[，,。:：\s]*/,'');
+    var parts=raw.split(/[\n,，、;；\s]+|和|与|以及/g).map(function(s){return s.trim();}).filter(Boolean);
+    var items=[];
+    var pending=null; // {数量,单位} 等待合并到下一个有名称的小块
+    parts.forEach(function(p){
+      var it=parseInvPart(p);
+      if(!it) return;
+      if(it.名称){
+        if(pending){
+          if(it.数量==null) it.数量=pending.数量;
+          if(!it.单位) it.单位=pending.单位;
+          pending=null;
+        }
+        items.push(it);
+      } else if(it.数量!=null || it.单位){
+        // 只有数量+单位、没有名称
+        if(items.length>0){
+          // “土豆 2斤” 形态 → 合并到上一项
+          var last=items[items.length-1];
+          if(last.数量==null) last.数量=it.数量;
+          if(!last.单位) last.单位=it.单位;
+        } else {
+          // “2斤 土豆” 形态 → 暂存，合并到下一项
+          pending={数量:it.数量, 单位:it.单位};
+        }
+      }
+    });
+    return items;
+  }
+
+  /* ---------- 调用大模型 API 解析库存（与菜谱共用 LS_AI 配置） ---------- */
+  function callLlmApiInv(rawText){
+    var cfg=loadAiConfig();
+    if(!cfg.key || !cfg.url || !cfg.model){
+      return Promise.reject(new Error('请先在「⚙️ 大模型配置」中填写 API URL、Key 和模型名'));
+    }
+    var sysPrompt='你是厨房库存录入助手。用户会用一段自然话描述他买的或家里已有的食材（例如“我买了3个西红柿、2斤土豆、1瓶酱油、葱”）。你的任务：从中识别出每一样食材，输出 JSON 对象，格式为：\n'
+      +'{\n'
+      +'  "items": [\n'
+      +'    {"name":"西红柿","qty":3,"unit":"个"},\n'
+      +'    {"name":"土豆","qty":2,"unit":"斤"},\n'
+      +'    {"name":"酱油","qty":1,"unit":"瓶"},\n'
+      +'    {"name":"葱","qty":null,"unit":""}\n'
+      +'  ]\n'
+      +'}\n'
+      +'要求：\n'
+      +'1) name 为食材名称（去掉数量/单位/修饰词，5-15字）；\n'
+      +'2) qty 为数字（若原文未提及数量则为 null）；\n'
+      +'3) unit 为单位（个/斤/瓶/袋/盒/包 等；若原文未提及单位则为空字符串）；\n'
+      +'4) 只输出 JSON 对象，不要任何额外文字、不要 markdown 代码块标记。';
+    var body={
+      model: cfg.model,
+      messages:[
+        {role:'system', content: sysPrompt},
+        {role:'user', content: rawText}
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
+    };
+    return fetch(cfg.url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},
+      body: JSON.stringify(body)
+    }).then(function(resp){
+      if(!resp.ok){
+        return resp.text().then(function(t){
+          var msg='API 返回错误 '+resp.status;
+          try{var j=JSON.parse(t); if(j.error && j.error.message) msg+='：'+j.error.message;}catch(_){ if(t) msg+='：'+t.slice(0,300); }
+          throw new Error(msg);
+        });
+      }
+      return resp.json();
+    }).then(function(data){
+      var content='';
+      if(data && data.choices && data.choices[0] && data.choices[0].message){
+        content=data.choices[0].message.content||'';
+      } else if(data && data.output && data.output.text){
+        content=data.output.text;
+      } else if(typeof data==='string'){
+        content=data;
+      }
+      content=(content||'').trim();
+      content=content.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+      var parsed;
+      try{ parsed=JSON.parse(content); }
+      catch(e){
+        var m=content.match(/\{[\s\S]*\}/);
+        if(m){ parsed=JSON.parse(m[0]); }
+        else throw new Error('AI 返回内容不是合法 JSON：'+content.slice(0,200));
+      }
+      var arr;
+      if(Array.isArray(parsed)) arr=parsed;
+      else if(parsed && Array.isArray(parsed.items)) arr=parsed.items;
+      else if(parsed && Array.isArray(parsed.data)) arr=parsed.data;
+      else arr=[];
+      return arr.map(function(x){
+        if(typeof x==='string') return {名称:x, 数量:undefined, 单位:''};
+        var q=x.qty!=null?x.qty:(x.数量!=null?x.数量:undefined);
+        var numOut;
+        if(q===null||q===undefined||q==='') numOut=undefined;
+        else if(typeof q==='number') numOut=isNaN(q)?undefined:q;
+        else numOut=isNaN(parseFloat(q))?undefined:parseFloat(q);
+        return {
+          名称: (x.name||x.名称||'').toString().trim().slice(0,40),
+          数量: numOut,
+          单位: (x.unit||x.单位||'').toString().trim(),
+          备注: (x.note||x.备注||'').toString().trim()
+        };
+      }).filter(function(x){return x.名称;});
+    });
+  }
+
+  function renderAiAddInvPreview(items){
+    var box=$('aiAddInvPreview'); if(!box) return;
+    var fallbackMsg='';
+    if(items && items.__fallback){ fallbackMsg='<div style="font-size:11px;color:var(--amber-d);margin-top:8px;">⚠️ '+esc(items.__fallback)+'</div>'; delete items.__fallback; }
+    if(!items || !items.length){
+      box.innerHTML='<div class="ai-preview"><h4>🤖 AI 解析结果</h4><div style="color:var(--muted);font-size:13px;">未识别到任何食材，请换种描述或检查输入。</div></div>'+fallbackMsg;
+      box.style.display='block';
+      if($('aiAddInvActions')) $('aiAddInvActions').style.display='none';
+      return;
+    }
+    var html=items.map(function(it){
+      var qtyOk=it.数量!=null && !isNaN(it.数量);
+      var unitOk=!!(it.单位 && String(it.单位).trim());
+      var qtyStr = qtyOk ? esc(String(it.数量)) : '<span style="color:var(--tomato-d);font-weight:700;">缺数量</span>';
+      var unitStr = unitOk ? esc(it.单位) : '<span style="color:var(--tomato-d);font-weight:700;">缺单位</span>';
+      var style = (qtyOk && unitOk) ? '' : 'border-color:var(--tomato-l);background:var(--tomato-xl);color:var(--tomato-d);';
+      return '<span class="pv-ing" style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 10px;'+style+'">'
+        +'<span style="font-weight:700;font-size:13px;">'+esc(it.名称)+'</span>'
+        +'<span style="font-size:11px;opacity:.85;">'+qtyStr+' '+unitStr+'</span>'
+        +'</span>';
+    }).join('');
+    box.innerHTML='<div class="ai-preview">'
+      +'<h4>🤖 AI 解析结果（共 '+items.length+' 项，将依次确认）</h4>'
+      +'<div class="pv-ings" style="display:flex;flex-wrap:wrap;gap:6px;">'+html+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:8px;">点「开始依次确认」后，缺单位/数量的项会逐个弹窗补全，再像待购入库那样逐项确认。</div>'
+      +'</div>'+fallbackMsg;
+    box.style.display='block';
+    if($('aiAddInvActions')) $('aiAddInvActions').style.display='flex';
+  }
+
+  function runAiAddInv(){
+    var raw=($('aiAddInvTextBox')? $('aiAddInvTextBox').value : '').trim();
+    if(!raw){ toast('请先描述一下你买/已有的食材~'); return; }
+    $('aiAddInvLoader').style.display='block';
+    $('aiAddInvPreview').style.display='none';
+    $('aiAddInvActions').style.display='none';
+    $('aiAddInvLoaderText').textContent='AI 正在识别食材名称/数量/单位…';
+    var cfg=loadAiConfig();
+    var useApi=!!(cfg.key && cfg.url && cfg.model);
+    var p;
+    if(useApi){
+      $('aiAddInvLoaderText').textContent='正在调用大模型（'+cfg.model+'）识别…';
+      p=callLlmApiInv(raw).catch(function(err){
+        console.warn('[AI库存] 大模型调用失败，降级到本地规则解析：', err);
+        $('aiAddInvLoaderText').textContent='大模型调用失败，改用本地规则解析中…';
+        var local=aiParseInvText(raw);
+        local.__fallback=err.message || String(err);
+        return local;
+      });
+    } else {
+      $('aiAddInvLoaderText').textContent='未配置大模型 API，改用本地规则解析中…';
+      var local=aiParseInvText(raw);
+      local.__fallback='未配置大模型 API（点右上角 ⚙️ 配置可启用真实 AI）';
+      p=Promise.resolve(local);
+    }
+    p.then(function(items){
+      __aiAddInvParsed=items;
+      $('aiAddInvLoader').style.display='none';
+      renderAiAddInvPreview(items);
+      if(items && items.__fallback){
+        toast('⚠️ '+items.__fallback, 'warn');
+      } else if(items && items.length){
+        toast('✅ AI 识别完成：共 '+items.length+' 项食材', 'ok');
+      }
+    }).catch(function(err){
+      $('aiAddInvLoader').style.display='none';
+      console.error('[AI库存] 解析失败：', err);
+      toast('解析出错了：'+(err.message||err), 'err');
+    });
+  }
+
+  /* ---------- 单值输入弹窗（依次补全单位 / 数量） ---------- */
+  function aiInvPrompt(opts){
+    $('aiPromptTitle').textContent=opts.title||'请填写';
+    $('aiPromptMsg').innerHTML=opts.msg||'';
+    var input=$('aiPromptInput');
+    input.type=opts.type||'text';
+    input.value=opts.value!=null?opts.value:'';
+    input.placeholder=opts.placeholder||'';
+    if(opts.inputmode) input.setAttribute('inputmode', opts.inputmode);
+    else input.removeAttribute('inputmode');
+    $('aiPromptHint').textContent=opts.hint||'';
+    $('aiPromptMask').hidden=false;
+    setTimeout(function(){ input.focus(); input.select(); }, 50);
+    __aiPromptCb=function(v){
+      $('aiPromptMask').hidden=true;
+      if(v===null){
+        if(opts.onCancel) opts.onCancel();
+      } else {
+        if(opts.onOk) opts.onOk(v);
+      }
+    };
+  }
+  function closeAiInvPrompt(){
+    $('aiPromptMask').hidden=true;
+    var cb=__aiPromptCb; __aiPromptCb=null; if(cb) cb(null);
+  }
+  function confirmAiInvPrompt(){
+    var v=$('aiPromptInput').value.trim();
+    var cb=__aiPromptCb; __aiPromptCb=null; if(cb) cb(v);
+  }
+
+  /* ---------- 依次确认流程：补单位 → 补数量 → 入库表单确认 ---------- */
+  function startAiAddInvConfirm(){
+    if(!__aiAddInvParsed || !__aiAddInvParsed.length){ toast('没有可确认的食材'); return; }
+    __aiInvItems=__aiAddInvParsed.slice();
+    __aiInvIdx=0;
+    __aiInvFlowActive=true;
+    closeAiAddInv();
+    setTimeout(processNextAiInvItem, 120);
+  }
+  function stopAiInvFlow(msg){
+    if(!__aiInvFlowActive) return;
+    __aiInvFlowActive=false;
+    __aiInvItems=[]; __aiInvIdx=0;
+    if(msg) toast(msg);
+  }
+  function processNextAiInvItem(){
+    if(!__aiInvFlowActive) return;
+    if(__aiInvIdx>=__aiInvItems.length){
+      __aiInvFlowActive=false;
+      var n=__aiInvItems.length;
+      __aiInvItems=[]; __aiInvIdx=0;
+      toast('✅ 已完成 '+n+' 样食材的入库', 'ok');
+      return;
+    }
+    var item=__aiInvItems[__aiInvIdx];
+    // 缺单位 → 弹窗补全
+    if(!item.单位 || !String(item.单位).trim()){
+      aiInvPrompt({
+        title:'请填写单位（'+(__aiInvIdx+1)+'/'+__aiInvItems.length+'）',
+        msg:'「<b style="color:var(--berry);">'+esc(item.名称)+'</b>」缺少单位，请填写：',
+        placeholder:'如：个 / 斤 / 瓶 / 袋',
+        hint:'留空并确定则跳过单位；点「跳过」则跳过这一项',
+        value:'',
+        onOk:function(v){ item.单位=v; proceedToQty(item); },
+        onCancel:function(){ skipAiInvItem('已跳过「'+item.名称+'」'); }
+      });
+    } else {
+      proceedToQty(item);
+    }
+  }
+  function proceedToQty(item){
+    if(!__aiInvFlowActive) return;
+    if(item.数量==null || item.数量==='' || (typeof item.数量==='number' && isNaN(item.数量))){
+      aiInvPrompt({
+        title:'请填写数量（'+(__aiInvIdx+1)+'/'+__aiInvItems.length+'）',
+        msg:'「<b style="color:var(--berry);">'+esc(item.名称)+'</b>」缺少数量，请填写：',
+        placeholder:'如：1 / 2 / 0.5',
+        hint:'留空并确定则默认为 1；点「跳过」则跳过这一项',
+        value:'1',
+        type:'number',
+        inputmode:'decimal',
+        onOk:function(v){ item.数量=parseFloat(v)||1; proceedToForm(item); },
+        onCancel:function(){ skipAiInvItem('已跳过「'+item.名称+'」'); }
+      });
+    } else {
+      proceedToForm(item);
+    }
+  }
+  function proceedToForm(item){
+    if(!__aiInvFlowActive) return;
+    // 打开库存表单（与 markBought 待购入库一致），预填后让用户确认分类/存放/保质期等
+    openFormModal('入库：'+(item.名称||''), getInvFormHtml());
+    bindInvForm();
+    $('f-name').value=(item.名称||'').trim();
+    $('f-qty').value=Number(item.数量)||1;
+    $('f-unit').value=(item.单位||'').trim();
+    $('f-buy').value=todayStr();
+    if(item.备注) $('f-note').value=item.备注;
+    if(item.分类) $('f-cat').value=item.分类;
+    if(item.存放) $('f-store').value=item.存放;
+    $('f-name').focus();
+    checkInvDupHint();
+    // 用库存长度变化作为保存成功的可靠信号：
+    // bindInvForm 的 submit handler 同步调用 addInv（inv.length+1）后再 closeFormModal（hidden=true），
+    // 因此当 modal 切到 hidden 时，若 inv.length 增加 = 保存成功；否则 = 用户取消。
+    var initialInvCount = inv.length;
+    var done=false;
+    var obs=new MutationObserver(function(){
+      if($('formModal').hidden){
+        obs.disconnect();
+        if(done) return; done=true;
+        if(!__aiInvFlowActive) return;
+        // 给 bindInvForm 内 closeFormModal 之后可能的尾随渲染留一点缓冲
+        setTimeout(function(){
+          if(!__aiInvFlowActive) return;
+          if(inv.length > initialInvCount){
+            __aiInvIdx++;
+            setTimeout(processNextAiInvItem, 150);
+          } else {
+            stopAiInvFlow('已取消，剩余 '+(__aiInvItems.length-__aiInvIdx)+' 项未添加');
+          }
+        }, 30);
+      }
+    });
+    obs.observe($('formModal'), {attributes:true, attributeFilter:['hidden']});
+  }
+  function skipAiInvItem(msg){
+    if(!__aiInvFlowActive) return;
+    __aiInvIdx++;
+    if(msg) toast(msg);
+    setTimeout(processNextAiInvItem, 80);
+  }
+
+  /* ---------- 库存大模型配置（与菜谱共用 LS_AI） ---------- */
+  function testAiInvConfig(){
+    var cfg={
+      url: ($('aiInvCfgUrl').value||'').trim(),
+      key: ($('aiInvCfgKey').value||'').trim(),
+      model: ($('aiInvCfgModel').value||'').trim()
+    };
+    if(!cfg.url || !cfg.key || !cfg.model){
+      showAiInvCfgStatus('请填写完整的 URL、Key、模型名', 'err');
+      return;
+    }
+    showAiInvCfgStatus('正在测试连通…', 'ok');
+    callLlmApiTest(cfg).then(function(ok){
+      showAiInvCfgStatus(ok?'✅ 连通成功！可保存后使用':'❌ 连通失败，请检查 URL/Key/模型名', ok?'ok':'err');
+    }).catch(function(err){
+      showAiInvCfgStatus('❌ '+err.message, 'err');
+    });
+  }
+  function showAiInvCfgStatus(msg, type){
+    var s=$('aiInvCfgStatus');
+    if(!s) return;
+    s.textContent=msg;
+    s.className='ai-status show '+(type==='ok'?'ok':'err');
+  }
+
+  function bindAiAddInvUi(){
+    if(!$('aiAddInvMask')) return;
+    $('aiAddInvClose').addEventListener('click', closeAiAddInv);
+    $('aiAddInvMask').addEventListener('click', function(e){ if(e.target.id==='aiAddInvMask') closeAiAddInv(); });
+    $('aiAddInvClearBtn').addEventListener('click', function(){
+      if($('aiAddInvTextBox')) $('aiAddInvTextBox').value='';
+      if($('aiAddInvPreview')) $('aiAddInvPreview').style.display='none';
+      if($('aiAddInvActions')) $('aiAddInvActions').style.display='none';
+      __aiAddInvParsed=null;
+      if($('aiAddInvTextBox')) $('aiAddInvTextBox').focus();
+    });
+    $('aiAddInvRunBtn').addEventListener('click', runAiAddInv);
+    $('aiAddInvStartBtn').addEventListener('click', startAiAddInvConfirm);
+    $('aiAddInvCancelBtn').addEventListener('click', function(){
+      if($('aiAddInvPreview')) $('aiAddInvPreview').style.display='none';
+      if($('aiAddInvActions')) $('aiAddInvActions').style.display='none';
+      __aiAddInvParsed=null;
+      if($('aiAddInvTextBox')) $('aiAddInvTextBox').focus();
+    });
+    if($('aiAddInvTextBox')){
+      $('aiAddInvTextBox').addEventListener('keydown', function(e){
+        if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); runAiAddInv(); }
+      });
+    }
+    // 大模型配置面板
+    $('aiInvCfgToggleBtn').addEventListener('click', function(){
+      var panel=$('aiInvCfgPanel');
+      if(panel) panel.hidden=!panel.hidden;
+    });
+    $('aiInvCfgSaveBtn').addEventListener('click', function(){
+      var cfg={
+        url: ($('aiInvCfgUrl').value||'').trim() || AI_DEFAULTS.url,
+        key: ($('aiInvCfgKey').value||'').trim(),
+        model: ($('aiInvCfgModel').value||'').trim() || AI_DEFAULTS.model
+      };
+      saveAiConfig(cfg);
+      showAiInvCfgStatus('✅ 已保存（'+(cfg.key?'已配置 API':'未配置 Key，仍走本地规则')+'）', 'ok');
+      setTimeout(function(){ showAiInvCfgStatus('',''); }, 2500);
+    });
+    $('aiInvCfgTestBtn').addEventListener('click', testAiInvConfig);
+    // 单值输入弹窗
+    $('aiPromptYes').addEventListener('click', confirmAiInvPrompt);
+    $('aiPromptNo').addEventListener('click', closeAiInvPrompt);
+    $('aiPromptMask').addEventListener('click', function(e){ if(e.target.id==='aiPromptMask') closeAiInvPrompt(); });
+    $('aiPromptInput').addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); confirmAiInvPrompt(); }
+      else if(e.key==='Escape'){ e.preventDefault(); closeAiInvPrompt(); }
+    });
     refreshAiCfgBadge();
   }
 
@@ -5925,6 +6506,7 @@
     resetRecForm();
   });
   var aiAddBtn=$('aiAddRecBtn'); if(aiAddBtn){ aiAddBtn.addEventListener('click', openAiAddRec); }
+  var aiAddInvBtn=$('aiAddInvBtn'); if(aiAddInvBtn){ aiAddInvBtn.addEventListener('click', openAiAddInv); }
 
   // 链接列表交互
   $('linkSearch').addEventListener('input', renderLinks);
@@ -6135,6 +6717,7 @@
   bindDashDrag();
   bindAiParseUi();
   bindAiAddRecUi();
+  bindAiAddInvUi();
   renderIngPool(); renderIngSuggest();
 
 })();
