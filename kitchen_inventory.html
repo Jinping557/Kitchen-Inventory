@@ -236,12 +236,28 @@
   .ing-pool{display:flex;flex-wrap:wrap;gap:6px;min-height:28px;}
   .ing-pool-empty{color:var(--muted);font-size:12px;font-style:italic;padding:4px 0;}
   .ing-tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:4px 8px 4px 12px;
-    border-radius:var(--r-full);background:var(--herb);color:#fff;cursor:pointer;
-    transition:all var(--t-fast);animation:tagPop var(--t-med) var(--ease-spring);}
+    border-radius:var(--r-full);background:var(--herb);color:#fff;cursor:text;
+    transition:all var(--t-fast);animation:tagPop var(--t-med) var(--ease-spring);
+    position:relative;}
   @keyframes tagPop{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
   .ing-tag:hover{background:var(--herb-d);}
+  .ing-tag:hover::before{
+    content:'✎';
+    position:absolute;
+    left:2px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:10px;
+    opacity:.6;
+  }
+  .ing-tag{padding-left:14px;}
   .ing-tag .x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
-    background:rgba(255,255,255,.25);font-size:14px;line-height:1;flex:none;}
+    background:rgba(255,255,255,.25);font-size:14px;line-height:1;flex:none;cursor:pointer;
+    transition:all var(--t-fast);}
+  .ing-tag .x:hover{
+    background:var(--tomato);
+    transform:scale(1.15) rotate(90deg);
+  }
   .ing-suggest{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
   .ing-suggest-label{font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:2px;}
   .ing-suggest-item{font-size:12px;font-weight:600;padding:4px 10px;border-radius:var(--r-full);
@@ -553,7 +569,27 @@
   .ai-preview .pv-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
   .ai-preview .pv-ings{display:flex;flex-wrap:wrap;gap:5px;}
   .ai-preview .pv-ing{font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);
-    background:var(--herb-xl);color:var(--herb-d);border:1px solid var(--herb-l);}
+    background:var(--herb-xl);color:var(--herb-d);border:1px solid var(--herb-l);
+    transition:all var(--t-fast);}
+  .ai-preview .pv-ing[title*="编辑"]{
+    cursor:text;
+    position:relative;
+    padding-left:14px;
+  }
+  .ai-preview .pv-ing[title*="编辑"]:hover{
+    background:var(--herb-l);
+    border-color:var(--herb);
+    box-shadow:0 2px 6px rgba(21,128,61,.15);
+  }
+  .ai-preview .pv-ing[title*="编辑"]:hover::before{
+    content:'✎';
+    position:absolute;
+    left:3px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:9px;
+    opacity:.7;
+  }
   .ai-preview .pv-steps{list-style:none;counter-reset:pvstep;padding:0;margin:0;}
   .ai-preview .pv-steps li{counter-increment:pvstep;padding:6px 0 6px 26px;position:relative;font-size:13px;line-height:1.5;border-bottom:1px dashed var(--line-2);}
   .ai-preview .pv-steps li:last-child{border-bottom:none;}
@@ -4024,7 +4060,10 @@
     if(pickedIngs.length===0){ pool.innerHTML='<span class="ing-pool-empty">还没有添加食材</span>'; }
     else{
       pool.innerHTML=pickedIngs.map(function(ing,i){
-        return '<span class="ing-tag" data-i="'+i+'">'+esc(ing)+'<span class="x">×</span></span>';
+        return '<span class="ing-tag" data-i="'+i+'" title="点击编辑食材名称" style="cursor:pointer">'
+          +esc(ing)
+          +'<span class="x" title="点击删除此食材">×</span>'
+          +'</span>';
       }).join('');
     }
     var r=$('r-ings'); if(r) r.value=pickedIngs.join('，');
@@ -4060,6 +4099,16 @@
   }
   function removeIng(i){
     pickedIngs.splice(i,1); renderIngPool(); renderIngSuggest();
+  }
+  function editIng(i){
+    var oldVal=pickedIngs[i]||'';
+    var newVal=window.prompt('编辑食材名称：', oldVal);
+    if(newVal===null) return;
+    newVal=newVal.trim(); if(!newVal) return;
+    var dup=pickedIngs.some(function(n,idx){return idx!==i && n.toLowerCase()===newVal.toLowerCase();});
+    if(dup){ toast('已存在相同食材：'+newVal); return; }
+    pickedIngs[i]=newVal;
+    renderIngPool(); renderIngSuggest();
   }
 
   function editRecipe(id){
@@ -4270,7 +4319,12 @@
     $('ingInput').addEventListener('input', renderIngSuggest);
     $('ingPool').addEventListener('click', function(e){
       var tag=e.target.closest('.ing-tag'); if(!tag) return;
-      removeIng(parseInt(tag.dataset.i,10));
+      var i=parseInt(tag.dataset.i,10);
+      if(e.target.classList.contains('x')){
+        removeIng(i);
+      } else {
+        editIng(i);
+      }
     });
     renderIngPool(); renderIngSuggest();
     bindFormStepEditor();
@@ -4812,11 +4866,13 @@
     }else{
       html+='<div class="pv-title" style="color:var(--muted);">（未识别到菜名，可手动填写）</div>';
     }
-    html+='<div class="pv-group"><div class="pv-label">识别出的食材（'+(parsed.ingredients.length)+'）</div>';
+    html+='<div class="pv-group"><div class="pv-label">识别出的食材（'+(parsed.ingredients.length)+'）· 点击食材可编辑名称</div>';
     if(parsed.ingredients.length===0){
       html+='<div style="font-size:12px;color:var(--muted);">未识别到食材，您可稍后手动勾选。</div>';
     } else {
-      html+='<div class="pv-ings">'+parsed.ingredients.map(function(n){return '<span class="pv-ing">'+esc(n)+'</span>';}).join('')+'</div>';
+      html+='<div class="pv-ings">'+parsed.ingredients.map(function(n,i){
+        return '<span class="pv-ing" data-parse-ing="'+i+'" title="点击编辑食材名称" style="cursor:pointer">'+esc(n)+'</span>';
+      }).join('')+'</div>';
     }
     html+='</div>';
     html+='<div class="pv-group"><div class="pv-label">识别出的制作步骤（'+(parsed.steps.length)+'）</div>';
@@ -4828,6 +4884,19 @@
     html+='</div>';
     box.innerHTML=html;
     box.style.display='block';
+    // 绑定食材点击编辑
+    box.querySelectorAll('.pv-ing[data-parse-ing]').forEach(function(el){
+      el.addEventListener('click', function(){
+        if(!__aiParsed) return;
+        var idx=parseInt(el.dataset.parseIng,10);
+        var oldVal=__aiParsed.ingredients[idx]||'';
+        var newVal=window.prompt('编辑食材名称：', oldVal);
+        if(newVal===null) return;
+        newVal=newVal.trim(); if(!newVal) return;
+        __aiParsed.ingredients[idx]=newVal;
+        renderAiPreview(__aiParsed);
+      });
+    });
   }
 
   function runAiParse(){
@@ -5097,19 +5166,34 @@
   // 渲染解析预览（独立弹窗用 aiAddPreview）
   function renderAiAddPreview(p){
     var box=$('aiAddPreview'); if(!box) return;
-    var ingsHtml=p.ingredients.map(function(n){return '<span class="pv-ing">'+esc(n)+'</span>';}).join('');
+    var ingsHtml=p.ingredients.map(function(n,i){
+      return '<span class="pv-ing" data-ai-ing="'+i+'" title="点击编辑食材名称" style="cursor:pointer">'+esc(n)+'</span>';
+    }).join('');
     var stepsHtml=p.steps.map(function(s){return '<li>'+esc(s)+'</li>';}).join('');
     var tagsHtml=p.tags && p.tags.length ? p.tags.map(function(t){return '<span class="pv-ing" style="background:var(--berry-xl);color:var(--berry-d);border-color:var(--berry-l);">'+esc(t)+'</span>';}).join('') : '<span style="font-size:11px;color:var(--muted);">无</span>';
     box.innerHTML='<div class="ai-preview">'
       +'<h4>🤖 AI 解析结果（预览，确认后加入菜谱库）</h4>'
       +'<div class="pv-title">🍽 '+(p.title || '<span style="color:var(--muted);">未识别到菜名</span>')+'</div>'
-      +'<div class="pv-group"><div class="pv-label">食材（'+p.ingredients.length+'）</div><div class="pv-ings">'+ingsHtml+'</div></div>'
+      +'<div class="pv-group"><div class="pv-label">食材（'+p.ingredients.length+'）· 点击食材可编辑名称</div><div class="pv-ings">'+ingsHtml+'</div></div>'
       +'<div class="pv-group"><div class="pv-label">制作步骤（'+p.steps.length+'）</div><ol class="pv-steps">'+stepsHtml+'</ol></div>'
       +'<div class="pv-group"><div class="pv-label">标签</div><div class="pv-ings">'+tagsHtml+'</div></div>'
       + (p.url ? '<div class="pv-group"><div class="pv-label">来源链接</div><div style="font-size:11px;color:var(--berry);word-break:break-all;">'+esc(p.url)+'</div></div>' : '')
       +'</div>';
     box.style.display='block';
     if($('aiAddActions')) $('aiAddActions').style.display='flex';
+    // 绑定食材点击编辑
+    box.querySelectorAll('.pv-ing[data-ai-ing]').forEach(function(el){
+      el.addEventListener('click', function(){
+        if(!__aiAddParsed) return;
+        var idx=parseInt(el.dataset.aiIng,10);
+        var oldVal=__aiAddParsed.ingredients[idx]||'';
+        var newVal=window.prompt('编辑食材名称：', oldVal);
+        if(newVal===null) return;
+        newVal=newVal.trim(); if(!newVal) return;
+        __aiAddParsed.ingredients[idx]=newVal;
+        renderAiAddPreview(__aiAddParsed);
+      });
+    });
   }
 
   // 解析入口（文字/链接统一入口）
